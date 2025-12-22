@@ -3,23 +3,17 @@ import numpy as np
 def lccde_predict(X_test, models, leader_map, predictions, probabilities):
     """
     Leader Class Confidence Decision Ensemble (LCCDE)
-    Refined logic based on 'untitled12.py' implementation.
     """
     final_preds = []
     num_samples = X_test.shape[0]
     model_names = ["XGBoost", "LightGBM", "CatBoost"]
     
     for i in range(num_samples):
-        # 1. Get predictions for this sample
         p = {name: predictions[name][i] for name in model_names}
         conf = {name: probabilities[name][i][p[name]] for name in model_names}
-        
-        # 2. Check Consensus
         if p["XGBoost"] == p["LightGBM"] == p["CatBoost"]:
             final_preds.append(p["XGBoost"])
             continue
-            
-        # 3. Check Majority Vote
         # If 2 models agree, check if the "Leader" for that class is one of them.
         counts = {x: list(p.values()).count(x) for x in p.values()}
         majority_class = max(counts, key=counts.get)
@@ -27,14 +21,11 @@ def lccde_predict(X_test, models, leader_map, predictions, probabilities):
         if counts[majority_class] >= 2:
             leader_model = leader_map.get(majority_class)
             # If the leader agrees with majority, or is part of the majority, trust it.
-            # (Your code defaults to the leader's prediction if it exists for that class)
             if leader_model:
                 final_preds.append(p[leader_model])
             else:
                 final_preds.append(majority_class)
             continue
-            
-        # 4. Complete Disagreement (The "Smart" Logic I missed)
         # Check if any model predicted a class for which IT IS the leader
         leader_matches = []
         for name in model_names:
