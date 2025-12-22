@@ -20,8 +20,8 @@ This table summarizes the initial performance of each model using its default (o
 | Baseline Model | Accuracy | Macro F1 | Weighted F1 | Key Observations |
 | :--- | :--- | :--- | :--- | :--- |
 | Logistic Regression | 94.62% | 0.49 | 0.94 | **Poor.** As a linear model, it failed to capture the complexity of the data and performed very poorly on most minority attack classes (many F1-scores of 0.00). |
-| Decision Tree (max_depth=10) | 99.34% | 0.66 | 0.99 | **Decent.** A significant improvement over the linear model, but it still completely missed several key minority classes like Bot, Sql Injection, and XSS. |
-| **LightGBM (Untuned)** | **90.26%** | **0.28** | **0.90** | **Failure / High Bias.** The surprise underperformer. It severely underfitted the data, resulting in a very low Macro F1 and completely failing to detect entire classes of attacks like Bot and PortScan. This was the strongest evidence that default parameters are not a one-size-fits-all solution. |
+| Decision Tree (max_depth=10) | 99.34% | 0.66 | 0.99 | **Decent.** A significant improvement over the linear model, but it still completely missed several key minority classes like `Bot`, `Sql Injection`, and `XSS`. |
+| **LightGBM (Untuned)** | **90.26%** | **0.28** | **0.90** | **Failure / High Bias.** The surprise underperformer. It severely underfitted the data, resulting in a very low Macro F1 and completely failing to detect entire classes of attacks like `Bot` and `PortScan`. This was the strongest evidence that default parameters are not a one-size-fits-all solution. |
 | CatBoost (Untuned) | 99.63% | 0.70 | 1.00 | **Good.** Better than the Decision Tree but noticeably weaker than XGBoost on the most challenging minority classes. Also, its training time on CPU was the longest. |
 | **XGBoost (Untuned)** | **99.77%** | **0.88** | **1.00** | **Excellent.** The clear "out-of-the-box" winner. It showed strong performance across the board and even managed to detect some difficult minority classes like Bot with high accuracy from the start. |
 
