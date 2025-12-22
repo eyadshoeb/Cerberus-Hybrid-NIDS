@@ -1,0 +1,37 @@
+# config.yaml
+paths:
+  data_dir: "data/"
+  model_dir: "saved_models/"
+  raw_data_path: "data/CICIDS2017_sample.csv"
+
+artifacts:
+  label_encoder: "label_encoder.joblib"
+  scaler: "scaler.joblib"
+  kmeans_model: "kmeans_anomaly.joblib"
+  leader_map: "leader_map.joblib"
+
+models:
+  xgboost:
+    n_estimators: 900
+    learning_rate: 0.057
+    max_depth: 11
+    tree_method: "gpu_hist" # Change to "hist" if no GPU
+  lightgbm:
+    n_estimators: 600
+    learning_rate: 0.01
+    num_leaves: 294
+    device_type: "cpu" 
+  catboost:
+    iterations: 600
+    learning_rate: 0.045
+    depth: 9
+    task_type: "GPU" # Change to "CPU" if no GPU
+
+anomaly_detection:
+  kmeans_k: 30
+  heuristic_thresholds:
+    urg_flag: 0.5
+    fin_flag: 2.0
+  target_clusters:
+    urg_cluster: 8
+    fin_cluster: 24
