@@ -98,11 +98,11 @@ The matrix below shows the effectiveness of **Tier 4 (Cluster-Aware Heuristics)*
 Cerberus-Hybrid-NIDS/
 ├── src/
 │   ├── __init__.py
-│   ├── preprocessing.py    # Cleaning, Label Encoding, Scaling
-│   ├── preprocessing_experiments.py # K-Means Smart Sampling logic
-│   ├── models.py           # XGB, LGBM, CatBoost definitions with Optuna params
-│   └── lccde.py            # The ensemble logic and inference engine
-├── demo/                   # Visualization assets
-├── main.py                 # CLI entry point for training and inference
-├── requirements.txt        # Python dependencies
+│   ├── preprocessing.py               # Cleaning, Label Encoding, Scaling
+│   ├── preprocessing_experiments.py   # K-Means Smart Sampling logic
+│   ├── models.py                      # XGB, LGBM, CatBoost definitions with Optuna params
+│   └── lccde.py                       # The ensemble logic and inference engine
+├── demo/                              # Visualization assets
+├── main.py                            # CLI entry point for training and inference
+├── requirements.txt                   # Python dependencies
 └── README.md
