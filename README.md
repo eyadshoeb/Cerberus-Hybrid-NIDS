@@ -27,7 +27,7 @@ This table summarizes the initial performance of each model using its default (o
 
 ### Phase 2: Optimization
 We utilized **Optuna** for Hyperparameter Optimization (HPO) to address the baseline failures.
-1.  **LightGBM Optimization:** We tuned LightGBM on CPU to resolve the underfitting. This was a turning point; the model went from the worst performer (F1 0.28) to the **single best individual model** (F1 ~0.92), excelling specifically at *SQL Injection* and *XSS* attacks.
+1.  **LightGBM Optimization:** We tuned LightGBM on CPU to resolve the underfitting. This was a turning point; the model went from the worst performer (F1 0.28) to the **single best individual model** (F1 ~0.92), excelling specifically at `SQL Injection` and `XSS` attacks.
 2.  **GPU Acceleration:** XGBoost and CatBoost were successfully tuned on GPU, reducing HPO time from hours to minutes.
 3.  **LCCDE Integration:** The ensemble combined the optimized LightGBM with the robust XGBoost and CatBoost. While LCCDE didn't simply average the F1 scores, it provided architectural stability, ensuring no single model's blind spot could result in a missed detection.
 
@@ -49,8 +49,8 @@ Based on the findings above, Cerberus utilizes a hierarchical approach designed 
 Three independent gradient boosting models analyze the raw network flow.
 *   **Input:** Full 78-Feature Set (preserving XSS detection capabilities).
 *   **Models:**
-    *   **LightGBM (CPU-Tuned):** Optimized to fix initial underfitting. Now serves as the specialist. After HPO, it became the "Leader" for *Bot, SQL Injection, and XSS attacks*.
-    *   **CatBoost (GPU-Tuned):** The brute-force expert. It holds the highest F1-score for *Web Attack – Brute Force*.
+    *   **LightGBM (CPU-Tuned):** Optimized to fix initial underfitting. Now serves as the specialist. After HPO, it became the "Leader" for `Bot`, `SQL Injection`, and `XSS attacks`.
+    *   **CatBoost (GPU-Tuned):** The brute-force expert. It holds the highest F1-score for `Web Attack – Brute Force`.
     *   **XGBoost (GPU-Tuned):** The generalist backbone, providing high stability across DoS vectors and Infiltration attacks.
 
 ### Tier 2: LCCDE Strategy (The Logic Core)
@@ -65,8 +65,8 @@ Traffic classified as "Benign" by Tier 2 is passed to a **K-Means Clustering alg
 ### Tier 4: Cluster-Aware Heuristics
 Once traffic is mapped to a cluster, we apply localized detection logic derived from our failure analysis:
 *   **Heuristic Rule:** If a flow falls into *Cluster 8*, we check `URG Flag > 0.5`. This simple rule recovered **41.38% of the zero-day attacks** (12 out of 29 stealthy attacks recovered) that the supervised layer missed.
-*   **Rule A:** If sample is in *Cluster 8* AND URG Flag Count > 0.5 → **Flag as Anomaly**.
-*   **Rule B:** If sample is in *Cluster 24* AND FIN Flag Count > 2.0 → **Flag as Anomaly**.
+*   **Rule A:** If sample is in *Cluster 8* AND `URG Flag Count > 0.5` → **Flag as Anomaly**.
+*   **Rule B:** If sample is in *Cluster 24* AND `FIN Flag Count > 2.0` → **Flag as Anomaly**.
 *   **False Positive Reduction:** The cluster-aware approach reduced False Positives by ~17% compared to applying heuristics globally.
 
 ## Data Pipeline: Smart Sampling
@@ -80,10 +80,10 @@ Unlike standard benchmarks that show uniform perfection, our experiments reveale
 
 | Model | Accuracy | Macro F1 | Strength |
 | :--- | :--- | :--- | :--- |
-| **LightGBM (CPU-Tuned)** | 99.78% | 0.9192 | **Single best individual model** (F1 ~0.92), Best handling of Web Attacks & Bots. |
+| **LightGBM (CPU-Tuned)** | 99.78% | 0.9192 | **Single best individual model** (F1 ~0.92), Best handling of `Web Attacks` & `Bots`. |
 | **CatBoost (GPU-Tuned)** | 99.76% | 0.8662 | Specialist for Brute Force patterns. |
 | **XGBoost (GPU-Tuned)** | 99.75% | 0.9027 | Robust across all DoS vectors. |
-| **Cerberus (Ensemble)** | **99.81%** | **0.94** | High stability; minimizes worst-case errors. Leverage XGBoost for DoS Slowhttptest, FTP-Patator & Infiltration but CatBoost for Brute Force Attacks. |
+| **Cerberus (Ensemble)** | **99.81%** | **0.94** | High stability; minimizes worst-case errors. Leverage XGBoost for `DoS Slowhttptest`, `FTP-Patator` & `Infiltration` but CatBoost for `Brute Force Attacks`. |
 
 **Key Insight:** LightGBM completely missed the `PortScan` class (0.03 recall), whereas XGBoost identified it perfectly. Conversely, CatBoost detected `FTP-Patator` with 100% precision while LightGBM only managed 18%. The LCCDE architecture successfully ignored individual model failures by deferring to the correct specialist.
 
@@ -116,7 +116,7 @@ While Cerberus achieves high performance, several avenues remain for transformin
 *   **Hybrid Sampling:** Explore combining SMOTE (for minority classes) with strategic undersampling (for the massive `Benign` class) to optimize training speed without losing information.
 
 ### 2. Intelligent Feature Engineering
-*   **Refined Feature Selection:** Our initial attempt with Information Gain (IG) hurt detection of XSS attacks. We plan to explore **FCBF (Fast Correlation-Based Filter)** to remove redundant features while strictly preserving those capable of distinguishing subtle attack vectors.
+*   **Refined Feature Selection:** Our initial attempt with Information Gain (IG) hurt detection of `XSS attacks`. We plan to explore **FCBF (Fast Correlation-Based Filter)** to remove redundant features while strictly preserving those capable of distinguishing subtle attack vectors.
 *   **Protocol-Aware Features:** Move beyond statistical aggregations (min/max/mean) and engineer features based on deep packet inspection (e.g., payload entropy, specific TCP flag sequences) to catch stealthier command-and-control beacons.
 
 ### 3. Next-Gen Anomaly Detection (Tier 3 Upgrade)
