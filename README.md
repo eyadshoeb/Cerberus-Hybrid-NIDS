@@ -21,12 +21,12 @@ This table summarizes the initial performance of each model using its default (o
 | :--- | :--- | :--- | :--- | :--- |
 | Logistic Regression | 94.62% | 0.49 | 0.94 | **Poor.** As a linear model, it failed to capture the complexity of the data and performed very poorly on most minority attack classes (many F1-scores of 0.00). |
 | Decision Tree (max_depth=10) | 99.34% | 0.66 | 0.99 | **Decent.** A significant improvement over the linear model, but it still completely missed several key minority classes like `Bot`, `Sql Injection`, and `XSS`. |
-| **LightGBM (Untuned)** | **90.26%** | **0.28** | **0.90** | **Failure / High Bias.** The surprise underperformer. It severely underfitted the data, resulting in a very low Macro F1 and completely failing to detect entire classes of attacks like `Bot` and `PortScan`. This was the strongest evidence that default parameters are not a one-size-fits-all solution. |
+| **LightGBM (Untuned)** | **90.26%** | **0.28** | **0.90** | **Failure / High Bias.** The surprise underperformer. It severely underfitted the data, resulting in a very low Macro F1 and completely failing to detect entire classes of attacks like `Bot` and `PortScan`. This was the strongest evidence that default parameters are not a one-size-fits-all solution. This highlighted the absolute necessity of Hyperparameter Optimization (HPO). |
 | CatBoost (Untuned) | 99.63% | 0.70 | 1.00 | **Good.** Better than the Decision Tree but noticeably weaker than XGBoost on the most challenging minority classes. Also, its training time on CPU was the longest. |
 | **XGBoost (Untuned)** | **99.77%** | **0.88** | **1.00** | **Excellent.** The clear "out-of-the-box" winner. It showed strong performance across the board and even managed to detect some difficult minority classes like `Bot` with high accuracy from the start. |
 
 ### Phase 2: Optimization
-We utilized **Optuna** for Hyperparameter Optimization (HPO) to address the baseline failures.
+We utilized **Optuna** for Hyperparameter Optimization (HPO) to address the baseline failures and maximize individual model potential.
 1.  **LightGBM Optimization:** We tuned LightGBM on CPU to resolve the underfitting. This was a turning point; the model went from the worst performer (F1 0.28) to the **single best individual model** (F1 ~0.92), excelling specifically at `SQL Injection` and `XSS` attacks.
 2.  **GPU Acceleration:** XGBoost and CatBoost were successfully tuned on GPU, reducing HPO time from hours to minutes.
 3.  **LCCDE Integration:** The ensemble combined the optimized LightGBM with the robust XGBoost and CatBoost. While LCCDE didn't simply average the F1 scores, it provided architectural stability, ensuring no single model's blind spot could result in a missed detection.
@@ -40,13 +40,16 @@ We attempted to reduce the dimensionality from 78 features to 40 using **Informa
 ### Phase 4: Anomaly Detection Evolution
 *   **Tier 3 (K-Means):** We clustered traffic that the Supervised layer classified as "Benign." We found that False Negatives (missed attacks) clustered together.
 *   **Tier 4 (Biased Classifiers):** We attempted to train mini-classifiers on specific K-Means clusters. Result: Shelved due to data scarcity in minority clusters.
-*   **Final Solution (Cluster-Aware Heuristics):** We replaced Tier 4 with targeted rules. By analyzing cluster profiles, we realized that specific clusters containing missed attacks had statistical anomalies (e.g., high URG Flag Count). Implementing rules for these specific clusters recovered 41% of the attacks missed by the supervised models.
+*   **Final Solution (Cluster-Aware Heuristics):** We replaced the complex Tier 4 with targeted, interpretable rules. By analyzing cluster profiles,  we applied heuristics (e.g., checking `URG Flag Count` in Cluster 8, `FIN Flag Count` in Cluster 24).
+    *   **Impact:** This recovered **41.38%** (12 out of 29) of the attacks the main LCCDE ensemble missed.
+    *   **Efficiency:** The cluster-aware approach significantly reduced false positives by **~17%** compared to applying heuristics globally, making the anomaly alerts much more targeted.
+
 
 ## The Architecture: A 4-Tier Defense System
 Based on the findings above, Cerberus utilizes a hierarchical approach designed specifically to address class imbalance and feature sensitivity.
 
 ### Tier 1: The Optimized Base Layer
-Three independent gradient boosting models analyze the raw network flow.
+Three independent gradient boosting models analyze extracted 78-feature flow data..
 *   **Input:** Full 78-Feature Set (preserving XSS detection capabilities).
 *   **Models:**
     *   **LightGBM (CPU-Tuned):** Optimized to fix initial underfitting. Now serves as the specialist. After HPO, it became the "Leader" for `Bot`, `SQL Injection`, and `XSS attacks`.
@@ -100,6 +103,7 @@ The Unsupervised Layer acts as a safety net for False Negatives (FN) that bypass
 | **K-Means Profiling** | LCCDE "Benign" Predictions | 7 Clusters flagged | Isolated high-risk traffic subgroups. |
 | **Cluster-Aware Heuristics** | Hidden Zero-Days | **41.3% Recall** | Recovered 12/29 attacks the main models missed. |
 | **Biased XGBoost (Cluster 30)** | Edge-case Anomalies | **100% Accuracy** | Successfully distinguished anomalies inside a mixed cluster. |
+| **Precision (Tier 3 Heuristic)** | Flagged Alerts | **~0.11%** | While effective at recall, the heuristics still flagged 10,776 true Benign samples (out of 135,764) as anomalous, indicating a low precision for alerts. |
 
 ### Visualizing the Anomaly Detection Defense
 The matrix below shows the effectiveness of **Tier 4 (Cluster-Aware Heuristics)**. Even after the advanced LCCDE models classified these samples as "Benign," the unsupervised logic successfully flagged them as anomalies based on cluster profiling.
