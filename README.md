@@ -6,13 +6,30 @@ This project implements a **Leader Class Confidence Decision Ensemble (LCCDE)**.
 
 It also includes a secondary **Unsupervised K-Means** layer to detect zero-day anomalies that the supervised models might classify as "Benign."
 
-## The Architecture
-Most ensembles just average predictions. Cerberus is stricter:
-1.  **Base Layer:** Three gradient boosting models independently predict the traffic class.
-2.  **LCCDE Logic:**
-    *   If all models agree → Output prediction.
-    *   If models disagree → The system defers to the "Leader Model" for the disputed class (e.g., if XGBoost historically detects 'PortScan' best, its vote outweighs the others for that specific label).
-3.  **Anomaly Detection:** Traffic classified as 'Benign' is passed through K-Means. Data points that form low-density clusters or are statistical outliers are flagged as potential zero-day threats.
+## Smart Sampling:
+To handle the massive volume of CICIDS2017 (2.8M rows) without losing rare attack patterns, we implemented K-Means Undersampling.
+We clustered the majority class ("Benign") into 1,000 micro-clusters.
+We sampled representatively from each cluster, ensuring we kept diverse types of "Normal" traffic while reducing dataset size by 90%.
+(Note: Code for this is provided in preprocessing_experiments.py)
+
+## The Architecture: A 4-Tier Defense System
+**Cerberus** goes beyond simple classification. It utilizes a hierarchical "Tiered" approach to ensure zero-day threats don't slip through as "Benign."
+
+### Tier 1: The Base Learners
+Three independent gradient boosting models (XGBoost, LightGBM, CatBoost) analyze the raw network flow.
+
+### Tier 2: LCCDE Strategy
+The **Leader Class Confidence Decision Ensemble** aggregates predictions. If the models disagree, decision power is dynamically handed to the model with the highest historical F1-score for the predicted class.
+
+### Tier 3: Behavioral Profiling (Unsupervised)
+Traffic classified as "Benign" by Tier 2 is not trusted blindly. It is passed to a **K-Means Clustering algorithm ($k=30$)**.
+*   **Logic:** Attacks that bypass supervised filters often cluster together due to similar statistical anomalies (e.g., high packet variance).
+*   **Discovery:** We identified specific clusters (e.g., Cluster 8 and 24) that contained a high density of False Negatives.
+
+### Tier 4: Cluster-Aware Heuristics & Biased Classifiers
+Once traffic is mapped to a cluster, we apply localized detection logic:
+1.  **Heuristics:** If a flow falls into *Cluster 8*, we check specific flags (e.g., `URG Flag > 0.5`). This simple rule recovered **41% of the attacks** that LCCDE originally missed.
+2.  **Biased Classifiers:** For high-risk clusters, we deploy lightweight Decision Trees trained specifically to distinguish "Normal" vs "Anomaly" *within that specific cluster's distribution*.
 
 ## Technical Highlights
 *   **Models:** XGBoost, LightGBM, CatBoost (Optimized via **Optuna**).
@@ -34,3 +51,25 @@ Unlike standard benchmarks that show uniform perfection, our experiments reveale
 *   **LightGBM** completely missed the `PortScan` class (0.03 recall), whereas **XGBoost** identified it perfectly (1.00 recall).
 *   **CatBoost** detected `FTP-Patator` with 100% precision, while **LightGBM** only managed 18%.
 *   **Conclusion:** The LCCDE architecture successfully ignored LightGBM's false negatives by deferring to XGBoost's higher confidence for PortScans.
+
+### Visual Analysis
+The confusion matrices below demonstrate how LightGBM (second panel) failed to diagonalize (classify correctly) for minority classes, appearing as a "faded" heatmap. The **Cerberus Ensemble (far right)** restores the diagonal structure, effectively "healing" the blind spots of the weaker models.
+
+![Confusion Matrix Comparison](demo/cerberus_comparison_matrix.png)
+
+## Anomaly Detection Results (The "Safety Net")
+The Supervised LCCDE layer is excellent, but no model is perfect. The Unsupervised Layer acts as a safety net for False Negatives (FN).
+
+| Method | Target | Performance | Impact |
+| :--- | :--- | :--- | :--- |
+| **K-Means Profiling** | LCCDE "Benign" Predictions | 7 Clusters flagged | Isolated high-risk traffic subgroups. |
+| **Cluster-Aware Heuristics** | Hidden Zero-Days | **41.3% Recall** | Recovered 12/29 attacks the main models missed. |
+| **Biased XGBoost (Cluster 30)** | Edge-case Anomalies | **100% Accuracy** | Successfully distinguished anomalies inside a mixed cluster. |
+
+**Key Finding:**
+The primary models struggled with specific `Web Attack` vectors. By analyzing **Cluster 8**, we found that `URG Flag` counts were a dead giveaway for these specific attacks, allowing us to write a heuristic rule that caught them without retraining the massive base models.
+
+### Visualizing the Zero-Day Defense
+The matrix below shows the effectiveness of **Tier 4 (Cluster-Aware Heuristics)**. Even after the advanced LCCDE models classified these samples as "Benign," the unsupervised logic successfully flagged them as anomalies based on cluster profiling.
+
+![Anomaly Detection Matrix](demo/heuristic_matrix.png)
