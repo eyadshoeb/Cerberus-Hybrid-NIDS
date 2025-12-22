@@ -1,51 +1,53 @@
 import numpy as np
 
-def lccde_predict(X_test, models, leader_map):
+def lccde_predict(X_test, models, leader_map, predictions, probabilities):
     """
-    Leader Class Confidence Decision Ensemble (LCCDE) Logic.
-    1. Gets predictions from all 3 models.
-    2. If they agree, output prediction.
-    3. If they disagree, trust the 'Leader' model for that specific predicted class.
+    Leader Class Confidence Decision Ensemble (LCCDE)
+    Refined logic based on 'untitled12.py' implementation.
     """
-    preds = {}
-    probs = {}
-    
-    # Get predictions from base models
-    for name, model in models.items():
-        probs[name] = model.predict_proba(X_test)
-        preds[name] = np.argmax(probs[name], axis=1)
-        
     final_preds = []
     num_samples = X_test.shape[0]
+    model_names = ["XGBoost", "LightGBM", "CatBoost"]
     
     for i in range(num_samples):
-        p_xgb = preds["XGBoost"][i]
-        p_lgb = preds["LightGBM"][i]
-        p_cb  = preds["CatBoost"][i]
+        # 1. Get predictions for this sample
+        p = {name: predictions[name][i] for name in model_names}
+        conf = {name: probabilities[name][i][p[name]] for name in model_names}
         
-        # Consensus
-        if p_xgb == p_lgb == p_cb:
-            final_preds.append(p_xgb)
+        # 2. Check Consensus
+        if p["XGBoost"] == p["LightGBM"] == p["CatBoost"]:
+            final_preds.append(p["XGBoost"])
             continue
             
-        # If models disagree, define strategies
-        predictions = [p_xgb, p_lgb, p_cb]
+        # 3. Check Majority Vote
+        # If 2 models agree, check if the "Leader" for that class is one of them.
+        counts = {x: list(p.values()).count(x) for x in p.values()}
+        majority_class = max(counts, key=counts.get)
         
-        # Logic: If 2 models agree, does the Leader of that class agree?
-        # (Simplified logic for portfolio readability)
-        if p_xgb == p_lgb:
-            final_preds.append(p_xgb)
-        elif p_xgb == p_cb:
-            final_preds.append(p_xgb)
-        elif p_lgb == p_cb:
-            final_preds.append(p_lgb)
-        else:
-            # Complete disagreement: Trust the highest confidence
-            conf_xgb = probs["XGBoost"][i][p_xgb]
-            conf_lgb = probs["LightGBM"][i][p_lgb]
-            conf_cb  = probs["CatBoost"][i][p_cb]
+        if counts[majority_class] >= 2:
+            leader_model = leader_map.get(majority_class)
+            # If the leader agrees with majority, or is part of the majority, trust it.
+            # (Your code defaults to the leader's prediction if it exists for that class)
+            if leader_model:
+                final_preds.append(p[leader_model])
+            else:
+                final_preds.append(majority_class)
+            continue
             
-            best_model_idx = np.argmax([conf_xgb, conf_lgb, conf_cb])
-            final_preds.append(predictions[best_model_idx])
+        # 4. Complete Disagreement (The "Smart" Logic I missed)
+        # Check if any model predicted a class for which IT IS the leader
+        leader_matches = []
+        for name in model_names:
+            pred_class = p[name]
+            if leader_map.get(pred_class) == name:
+                leader_matches.append(name)
+        
+        if len(leader_matches) == 1:
+            # Exactly one model is playing to its strength
+            final_preds.append(p[leader_matches[0]])
+        else:
+            # Fallback to highest confidence
+            best_model = max(model_names, key=lambda k: conf[k])
+            final_preds.append(p[best_model])
             
     return np.array(final_preds)
