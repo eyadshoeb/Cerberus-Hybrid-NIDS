@@ -101,7 +101,7 @@ The Unsupervised Layer acts as a safety net for False Negatives (FN) that bypass
 | **Cluster-Aware Heuristics** | Hidden Zero-Days | **41.3% Recall** | Recovered 12/29 attacks the main models missed. |
 | **Biased XGBoost (Cluster 30)** | Edge-case Anomalies | **100% Accuracy** | Successfully distinguished anomalies inside a mixed cluster. |
 
-### Visualizing the Zero-Day Defense
+### Visualizing the Anomaly Detection Defense
 The matrix below shows the effectiveness of **Tier 4 (Cluster-Aware Heuristics)**. Even after the advanced LCCDE models classified these samples as "Benign," the unsupervised logic successfully flagged them as anomalies based on cluster profiling.
 
 ![Anomaly Detection Matrix](demo/heuristic_matrix.png)
