@@ -1,8 +1,14 @@
-pandas
-numpy
-scikit-learn
-xgboost
-lightgbm
-catboost
-matplotlib
-seaborn
+        pandas>=2.2.0
+        numpy>=1.26.0,<2.0.0 # Pinning for sklearn 1.3.2
+        scikit-learn==1.3.2
+        matplotlib>=3.7.0
+        seaborn>=0.13.0
+        torch>=2.2.0 # Only needed if you have GPU and want to detect it
+        PyYAML>=6.0
+        xgboost>=2.0.0
+        lightgbm>=4.0.0
+        catboost>=1.2.2
+        joblib>=1.3.0
+        # imbalanced-learn # Not included as it was shelved, but add if re-introduced
+        # optuna # Not strictly needed for *running* the final models, but useful for development
+        kaggle>=1.6.0
