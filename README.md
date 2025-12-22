@@ -67,10 +67,10 @@ Unlike standard benchmarks that show uniform perfection, our experiments reveale
 
 | Model | Accuracy | Macro F1 | Key Weakness |
 | :--- | :--- | :--- | :--- |
-| **LightGBM** | 90.26% | 0.28 | Failed to detect **Botnet** and **PortScan** (0% Recall). |
-| **CatBoost** | 99.63% | 0.70 | Struggled with **Web Attack XSS** (2% Recall). |
-| **XGBoost** | 99.77% | 0.88 | Strongest base learner, but weak on **Sql Injection**. |
-| **Cerberus (Ensemble)** | **99.81%** | **0.94** | Leverage XGBoost for PortScan but CatBoost for DDoS. |
+| **LightGBM (CPU-Tuned)** | 99.78% | 0.9192 | **Single best individual model** (F1 ~0.92), excelling specifically at *SQL Injection* and *XSS* attack. |
+| **CatBoost (GPU-Tuned)** | 99.76% | 0.8662 | Struggled with **Web Attack XSS** (2% Recall). |
+| **XGBoost (GPU-Tuned)** | 99.75% | 0.9027 | Strongest base learner, but weaker on **Sql Injection**. |
+| **Cerberus (Ensemble)** | **99.81%** | **0.94** | Leverage XGBoost for DoS Slowhttptest, FTP-Patator & Infiltration but CatBoost for Brute Force Attacks. |
 
 **Key Insight:** LightGBM completely missed the `PortScan` class (0.03 recall), whereas XGBoost identified it perfectly. Conversely, CatBoost detected `FTP-Patator` with 100% precision while LightGBM only managed 18%. The LCCDE architecture successfully ignored individual model failures by deferring to the correct specialist.
 
