@@ -36,10 +36,11 @@ def load_model(filepath, model_type, params=None):
         model.load_model(filepath)
         return model
     elif model_type == 'lightgbm':
-        # Loading LGBM into sklearn wrapper requires a bit of gymnastics
+        # Loading LGBM into sklearn wrapper 
         model = lgb.LGBMClassifier(**params)
         booster = lgb.Booster(model_file=filepath)
         model._Booster = booster
+        model._n_classes = booster.num_class()
         model._fitted = True
         return model
     return joblib.load(filepath)
