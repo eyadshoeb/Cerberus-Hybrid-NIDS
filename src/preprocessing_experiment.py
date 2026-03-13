@@ -27,7 +27,7 @@ class SmartDataSampler:
         )
         self.df = self.df.fillna(0)
         if 'Label' in self.df.columns:
-            self.df.iloc[:, -1] = self.label_encoder.fit_transform(self.df.iloc[:, -1])
+            self.df['Label'] = self.label_encoder.fit_transform(self.df['Label'])
             print("Labels Encoded.")
         return self.df
 
@@ -37,11 +37,17 @@ class SmartDataSampler:
 
         print(f"Starting K-Means Sampling (Clusters: {n_clusters})...")
         # Assuming Benign is usually class 0 or the most frequent
-        counts = self.df['Label'].value_counts()
+        if 'Label' not in self.df.columns:
+             # Try to guess label column if it was encoded but name changed
+             label_col = self.df.columns[-1] 
+        else:
+             label_col = 'Label'
+
+        counts = self.df[label_col].value_counts()
         majority_class_id = counts.idxmax()
         
-        df_minor = self.df[self.df['Label'] != majority_class_id]
-        df_major = self.df[self.df['Label'] == majority_class_id].copy()
+        df_minor = self.df[self.df[label_col] != majority_class_id]
+        df_major = self.df[self.df[label_col] == majority_class_id].copy()
         
         print(f"Majority Class Size: {len(df_major)}")
         print(f"Minority Class Size: {len(df_minor)}")
